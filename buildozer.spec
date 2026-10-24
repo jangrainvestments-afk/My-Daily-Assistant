@@ -6,7 +6,7 @@ source.dir = .
 source.include_exts = py,kv,png,jpg,jpeg,atlas,db
 source.exclude_dirs = .git,.venv,.venv-kivy,venv,.buildozer,__pycache__
 version = 0.1.0
-requirements = python3,kivy,charset-normalizer==3.3.2
+requirements = python3,kivy
 orientation = portrait
 fullscreen = 0
 
