@@ -19,6 +19,9 @@ android.add_src = src/android
 android.extra_manifest_xml = ./src/android/extra_manifest.xml
 android.extra_manifest_application_xml = ./src/android/extra_manifest_application.xml
 
+# Use the p4a develop branch that supports --extra-manifest-application-xml.
+p4a.branch = develop
+
 [buildozer]
 log_level = 2
 warn_on_root = 1
