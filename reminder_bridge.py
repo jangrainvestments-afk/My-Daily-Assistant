@@ -56,3 +56,13 @@ def cancel_event(event_id):
             scheduler.cancel(activity, int(event_id))
     except Exception as exc:
         print("Could not cancel event reminders:", exc)
+
+
+def open_exact_alarm_settings():
+    """Open Android's special-access screen if exact alarms are not allowed."""
+    try:
+        activity, scheduler = _native()
+        if activity is not None:
+            scheduler.openExactAlarmSettings(activity)
+    except Exception as exc:
+        print("Could not open exact-alarm settings:", exc)
