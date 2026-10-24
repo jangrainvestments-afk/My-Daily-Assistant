@@ -14,7 +14,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
 
-from reminder_bridge import cancel_event, request_notification_permission, schedule_event
+from reminder_bridge import cancel_event, open_exact_alarm_settings, request_notification_permission, schedule_event
 
 DATABASE = Path(__file__).parent / "schedule.db"
 BG = (0.035, 0.065, 0.12, 1)
@@ -71,6 +71,10 @@ class MyDailyAssistantApp(App):
         self._background.pos = widget.pos
         self._background.size = widget.size
 
+    def on_resume(self):
+        # Rebuild alarms after returning from Android notification/alarm settings.
+        self.reschedule_saved_events()
+
     def events(self, upcoming_only=False):
         now = datetime.now()
         with sqlite3.connect(DATABASE) as conn:
@@ -121,6 +125,7 @@ class MyDailyAssistantApp(App):
             stats.add_widget(tile)
         self.root_box.add_widget(stats)
         self.root_box.add_widget(button("+  Add an event", lambda *_: self.event_form(), TEAL))
+        self.root_box.add_widget(button("Enable precise reminders", lambda *_: open_exact_alarm_settings()))
         self.root_box.add_widget(button("Ask your assistant", lambda *_: self.show_assistant()))
         self.root_box.add_widget(label("UP NEXT", 12, MUTED, size_hint_y=None, height=dp(24)))
         scroll = ScrollView()
