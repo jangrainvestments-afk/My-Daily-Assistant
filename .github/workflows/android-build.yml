@@ -49,7 +49,7 @@ jobs:
           # Recent charset-normalizer releases publish Android-specific cp314 wheels.
           # python-for-android later passes the selected URL to host pip, which rejects
           # Android-tagged wheels. 3.4.9 is distributed as a universal Python wheel.
-          printf '%s\\n' 'charset-normalizer==3.4.9' > "$GITHUB_WORKSPACE/android-build-constraints.txt"
+          printf '%s\n' 'charset-normalizer==3.4.9' > "$GITHUB_WORKSPACE/android-build-constraints.txt"
           echo "PIP_CONSTRAINT=$GITHUB_WORKSPACE/android-build-constraints.txt" >> "$GITHUB_ENV"
       - name: Build debug APK
         run: buildozer -v android debug
