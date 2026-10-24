@@ -45,6 +45,7 @@ public class ReminderReceiver extends BroadcastReceiver {
                 .setContentText("Your event is coming up. Open My Daily Assistant for details.")
                 .setAutoCancel(true);
         if (contentIntent != null) builder.setContentIntent(contentIntent);
-        manager.notify(eventId * 10 + label.hashCode() % 9, builder.build());
+        int reminderIndex = "24 hours".equals(label) ? 1 : ("1 hour".equals(label) ? 2 : 3);
+        manager.notify(eventId * 10 + reminderIndex, builder.build());
     }
 }
