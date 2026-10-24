@@ -17,6 +17,7 @@ android.accept_sdk_license = True
 android.numeric_version = 10242
 android.add_src = src/android
 android.extra_manifest_xml = ./src/android/extra_manifest.xml
+android.extra_manifest_application_xml = ./src/android/extra_manifest_application.xml
 
 [buildozer]
 log_level = 2
