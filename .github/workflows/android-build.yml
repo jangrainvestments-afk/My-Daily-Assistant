@@ -1,0 +1,81 @@
+name: Android APK build
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, feature/native-event-reminders]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-android:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install system build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 cmake \
+            libffi-dev libssl-dev libltdl-dev build-essential ccache
+      - name: Install Buildozer
+        run: python -m pip install --upgrade pip buildozer
+      - name: Enable application-child manifest XML support
+        run: python scripts/patch_buildozer_manifest_option.py
+      - name: Check Python syntax
+        run: python -m py_compile main.py app_redesign.py reminder_bridge.py scripts/patch_buildozer_manifest_option.py
+      - name: Constrain charset-normalizer to a universal wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Recent charset-normalizer releases publish Android-specific cp314 wheels.
+          # python-for-android later passes the selected URL to host pip, which rejects
+          # Android-tagged wheels. 3.4.9 is distributed as a universal Python wheel.
+          printf '%s\n' 'pip==25.3' 'charset-normalizer==3.4.9' > "$GITHUB_WORKSPACE/android-build-constraints.txt"
+          echo "PIP_CONSTRAINT=$GITHUB_WORKSPACE/android-build-constraints.txt" >> "$GITHUB_ENV"
+      - name: Build debug APK
+        run: buildozer -v android debug
+      - name: Verify APK package and receivers
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$(find bin -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          test -n "$APK"
+          SDK="$HOME/.buildozer/android/platform/android-sdk"
+          AAPT="$(find "$SDK/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          "$AAPT" dump badging "$APK" | grep -F "package: name='org.test.mydailyassistant'"
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml > manifest-tree.txt
+          grep -F 'org.mydailyassistant.reminders.ReminderReceiver' manifest-tree.txt
+          grep -F 'org.mydailyassistant.reminders.ReminderBootReceiver' manifest-tree.txt
+          grep -F 'android.permission.POST_NOTIFICATIONS' manifest-tree.txt
+          grep -F 'android.permission.RECEIVE_BOOT_COMPLETED' manifest-tree.txt
+          grep -F 'android.permission.SCHEDULE_EXACT_ALARM' manifest-tree.txt
+          echo "APK verified structurally: $APK"
+          sha256sum "$APK"
+      - name: Upload debug APK and manifest report
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-daily-assistant-debug-apk
+          path: |
+            bin/*.apk
+            manifest-tree.txt
+          if-no-files-found: error
+          retention-days: 14
