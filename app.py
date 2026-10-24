@@ -9,6 +9,7 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
+from reminder_bridge import request_notification_permission, schedule_event
 
 DATABASE = Path(__file__).parent / "schedule.db"
 
@@ -33,6 +34,14 @@ class MyDailyAssistantApp(App):
         if platform == "android":
             DATABASE = Path(self.user_data_dir) / "schedule.db"
         initialize_database()
+        request_notification_permission()
+        # Rebuild pending alerts from the saved event database whenever the app opens.
+        with sqlite3.connect(DATABASE) as conn:
+            saved_events = conn.execute(
+                "SELECT id, title, event_date, event_time FROM events"
+            ).fetchall()
+        for event_id, title, event_date, event_time in saved_events:
+            schedule_event(event_id, title, event_date, event_time)
 
         self.layout = BoxLayout(orientation="vertical", padding=20, spacing=12)
         self.heading = Label(text="My Daily Assistant", font_size=28, size_hint=(1, 0.2))
@@ -74,10 +83,12 @@ class MyDailyAssistantApp(App):
                 self.show_message("Check the date and time format.\nExample: 2026-10-25 and 14:30")
                 return
             with sqlite3.connect(DATABASE) as conn:
-                conn.execute("""
+                cursor = conn.execute("""
                     INSERT INTO events (title, event_date, event_time, location)
                     VALUES (?, ?, ?, ?)
                 """, (title.text.strip(), date.text.strip(), time.text.strip(), location.text.strip()))
+                event_id = cursor.lastrowid
+            schedule_event(event_id, title.text.strip(), date.text.strip(), time.text.strip())
             popup.dismiss()
             self.status.text = "Event saved successfully!"
             self.show_message("Your event has been saved!")
