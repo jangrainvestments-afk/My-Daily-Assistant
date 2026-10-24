@@ -170,7 +170,9 @@ class MyDailyAssistantApp(App):
             fields.add_widget(field)
         fields.add_widget(label("Editing the date or time automatically reschedules reminders.",
                                 11, MUTED, size_hint_y=None, height=dp(36)))
-        save = button("Save changes" if editing else "Save event", lambda *_: None, TEAL)
+        save = Button(text="Save changes" if editing else "Save event",
+                      size_hint_y=None, height=dp(46), background_normal="",
+                      background_color=TEAL, color=WHITE, font_size=dp(14))
         fields.add_widget(save)
         popup = Popup(title="Edit / Postpone event" if editing else "New event",
                       content=fields, size_hint=(0.92, 0.82))
@@ -204,7 +206,6 @@ class MyDailyAssistantApp(App):
             self.show_dashboard()
             self.message("Event saved; reminders updated.")
 
-        save.unbind(on_release=save.callback) if hasattr(save, "callback") else None
         save.bind(on_release=save_event)
         popup.open()
 
