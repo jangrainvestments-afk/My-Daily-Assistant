@@ -42,6 +42,15 @@ jobs:
         run: python scripts/patch_buildozer_manifest_option.py
       - name: Check Python syntax
         run: python -m py_compile main.py app_redesign.py reminder_bridge.py scripts/patch_buildozer_manifest_option.py
+      - name: Constrain charset-normalizer to a universal wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          # charset-normalizer 3.5.1+ may publish Android-specific cp314 wheels.
+          # python-for-android currently passes the selected wheel URL to host pip,
+          # which rejects Android-tagged wheels. 3.5.0 provides a universal wheel.
+          printf 'charset-normalizer==3.5.0\\n' > "$GITHUB_WORKSPACE/android-build-constraints.txt"
+          echo "PIP_CONSTRAINT=$GITHUB_WORKSPACE/android-build-constraints.txt" >> "$GITHUB_ENV"
       - name: Build debug APK
         run: buildozer -v android debug
       - name: Verify APK package and receivers
