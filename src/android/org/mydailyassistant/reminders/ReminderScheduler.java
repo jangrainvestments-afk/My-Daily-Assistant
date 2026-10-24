@@ -38,7 +38,11 @@ public final class ReminderScheduler {
             intent.putExtra("event_millis", eventMillis);
             PendingIntent pending = PendingIntent.getBroadcast(context, requestCode, intent,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                    && alarms.canScheduleExactAlarms()) {
+                alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pending);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                // Fallback when exact-alarm special access has not been granted.
                 alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pending);
             } else {
                 alarms.set(AlarmManager.RTC_WAKEUP, triggerAt, pending);
@@ -64,6 +68,21 @@ public final class ReminderScheduler {
                 alarms.cancel(pending);
                 pending.cancel();
             }
+        }
+    }
+
+    public static boolean canUseExactAlarms(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true;
+        AlarmManager alarms = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        return alarms != null && alarms.canScheduleExactAlarms();
+    }
+
+    public static void openExactAlarmSettings(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !canUseExactAlarms(context)) {
+            Intent settings = new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+            settings.setData(android.net.Uri.parse("package:" + context.getPackageName()));
+            settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(settings);
         }
     }
 
